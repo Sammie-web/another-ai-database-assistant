@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+JSON.parse(fs.readFileSync('composer.json', 'utf8'));
+const blade = fs.readFileSync('resources/views/chat.blade.php', 'utf8');
+let script = blade.match(/<script>([\s\S]*?)<\/script>/)[1];
+script = script.replace(/^const endpoints = .*;$/m, 'const endpoints = {chat:"/assistant/chat",reset:"/assistant/reset",confirm:"/assistant/proposals"};');
+new vm.Script(script);
+assert(!script.includes('innerHTML'), 'Untrusted content must not use innerHTML');
+assert(script.includes('X-CSRF-TOKEN'));
+assert(script.includes('encodeURIComponent(proposal.proposal_id)'));
+console.log('PASS: composer JSON, frontend JavaScript syntax, text rendering and CSRF wiring checks.');
